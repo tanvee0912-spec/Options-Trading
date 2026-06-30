@@ -15,17 +15,23 @@ export default function Home() {
         </div>
         <div className="hidden sm:flex items-center gap-6" style={{ fontSize: 13, color: "#7a9c7a" }}>
           <Link href="/how-it-works" style={{ color: "#7a9c7a", textDecoration: "none" }} className="hover:text-green-400 transition-colors">
-  How it works
-</Link>
-          <span className="cursor-pointer hover:text-green-400 transition-colors">Simulator</span>
-          <span className="cursor-pointer hover:text-green-400 transition-colors">Learn</span>
+            How it works
+          </Link>
+          <Link href="/simulator" style={{ color: "#7a9c7a", textDecoration: "none" }} className="hover:text-green-400 transition-colors">
+            Simulator
+          </Link>
+          <Link href="/learn" style={{ color: "#7a9c7a", textDecoration: "none" }} className="hover:text-green-400 transition-colors">
+            Learn
+          </Link>
         </div>
-        <button
-          style={{ background: "#1e6b2e", color: "#a8f0b4", border: "0.5px solid #2e8b3e", borderRadius: 6, fontSize: 13, padding: "7px 16px", cursor: "pointer" }}
-          className="hover:opacity-90 transition-opacity"
-        >
-          Try for free →
-        </button>
+        <Link href="/simulator">
+          <button
+            style={{ background: "#1e6b2e", color: "#a8f0b4", border: "0.5px solid #2e8b3e", borderRadius: 6, fontSize: 13, padding: "7px 16px", cursor: "pointer" }}
+            className="hover:opacity-90 transition-opacity"
+          >
+            Try for free →
+          </button>
+        </Link>
       </nav>
 
       {/* HERO */}
@@ -48,9 +54,11 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="flex flex-wrap gap-3 justify-center mb-12">
-          <button style={{ background: "#1e6b2e", color: "#c8f4d0", border: "0.5px solid #2e8b3e", borderRadius: 8, fontSize: 14, padding: "10px 22px", cursor: "pointer" }}>
-            Run your first simulation →
-          </button>
+          <Link href="/simulator">
+            <button style={{ background: "#1e6b2e", color: "#c8f4d0", border: "0.5px solid #2e8b3e", borderRadius: 8, fontSize: 14, padding: "10px 22px", cursor: "pointer" }}>
+              Run your first simulation →
+            </button>
+          </Link>
           <button style={{ background: "transparent", color: "#b8d4b8", border: "0.5px solid #2a4a2a", borderRadius: 8, fontSize: 14, padding: "10px 22px", cursor: "pointer" }}>
             Watch a demo
           </button>

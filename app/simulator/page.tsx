@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ReferenceLine, ResponsiveContainer, AreaChart, Area
@@ -29,6 +30,11 @@ interface SimulationResult {
     avgProfit: number;
     avgLoss: number;
   };
+}
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
 }
 
 // ── Education Content ──────────────────────────────────────────────────────
@@ -99,61 +105,29 @@ function EduDrawer({ topic, onClose }: { topic: string | null; onClose: () => vo
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 40,
-        }}
-      />
-      {/* Drawer */}
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 40 }} />
       <div style={{
         position: "fixed", top: 0, right: 0, bottom: 0, width: 360,
         background: "#0d150d", borderLeft: "0.5px solid #2a3a2a",
         zIndex: 50, padding: "28px 24px", overflowY: "auto",
         display: "flex", flexDirection: "column", gap: 20,
       }}>
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div style={{ fontSize: 11, color: "#5fc97a", textTransform: "uppercase", letterSpacing: 1.5 }}>
-            Education
-          </div>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", color: "#5a7a5a", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
-          >
-            ✕
-          </button>
+          <div style={{ fontSize: 11, color: "#5fc97a", textTransform: "uppercase", letterSpacing: 1.5 }}>Education</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#5a7a5a", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
         </div>
-
-        {/* Title */}
-        <div style={{ fontSize: 20, fontWeight: 600, color: "#eaf4ea", lineHeight: 1.3 }}>
-          {content.title}
-        </div>
-
-        {/* Sections */}
+        <div style={{ fontSize: 20, fontWeight: 600, color: "#eaf4ea", lineHeight: 1.3 }}>{content.title}</div>
         {[
           { label: "What it is", text: content.def, color: "#7a9c7a" },
           { label: "Why it matters", text: content.why, color: "#5fc97a" },
           { label: "Example", text: content.example, color: "#5a7a5a" },
         ].map(({ label, text, color }) => (
-          <div key={label} style={{
-            background: "#111811", border: "0.5px solid #1e2e1e",
-            borderRadius: 8, padding: "14px 16px",
-          }}>
-            <div style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>
-              {label}
-            </div>
-            <div style={{ fontSize: 13, color: "#b0ccb0", lineHeight: 1.6 }}>
-              {text}
-            </div>
+          <div key={label} style={{ background: "#111811", border: "0.5px solid #1e2e1e", borderRadius: 8, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>{label}</div>
+            <div style={{ fontSize: 13, color: "#b0ccb0", lineHeight: 1.6 }}>{text}</div>
           </div>
         ))}
-
-        {/* Footer hint */}
-        <div style={{ fontSize: 11, color: "#3a5a3a", marginTop: "auto", paddingTop: 8 }}>
-          Click any metric card to learn more about it.
-        </div>
+        <div style={{ fontSize: 11, color: "#3a5a3a", marginTop: "auto", paddingTop: 8 }}>Click any metric card to learn more about it.</div>
       </div>
     </>
   );
@@ -161,69 +135,222 @@ function EduDrawer({ topic, onClose }: { topic: string | null; onClose: () => vo
 
 // ── Clickable Stat Card ─────────────────────────────────────────────────────
 
-function StatCard({
-  label, value, sub, onLearn
-}: { label: string; value: string; sub: string; onLearn: () => void }) {
+function StatCard({ label, value, sub, onLearn }: { label: string; value: string; sub: string; onLearn: () => void }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <div
-      onClick={onLearn}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <div onClick={onLearn} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         background: hovered ? "#111e11" : "#0d150d",
         border: `0.5px solid ${hovered ? "#3a5a3a" : "#1e2e1e"}`,
         borderRadius: 8, padding: "14px 20px", flex: 1, minWidth: 140,
-        cursor: "pointer", transition: "all 0.15s",
-        position: "relative",
-      }}
-    >
-      <div style={{ color: "#5a7a5a", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-        {label}
-      </div>
+        cursor: "pointer", transition: "all 0.15s", position: "relative",
+      }}>
+      <div style={{ color: "#5a7a5a", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{label}</div>
       <div style={{ color: "#5fc97a", fontSize: 20, fontWeight: 600, marginBottom: 2 }}>{value}</div>
       <div style={{ color: "#3a5a3a", fontSize: 11 }}>{sub}</div>
-      {/* Learn indicator */}
-      <div style={{
-        position: "absolute", top: 10, right: 12,
-        fontSize: 10, color: "#3a5a3a",
-        opacity: hovered ? 1 : 0, transition: "opacity 0.15s",
-      }}>
-        learn ↗
-      </div>
+      <div style={{ position: "absolute", top: 10, right: 12, fontSize: 10, color: "#3a5a3a", opacity: hovered ? 1 : 0, transition: "opacity 0.15s" }}>learn ↗</div>
     </div>
   );
 }
 
 // ── Clickable Greek Card ────────────────────────────────────────────────────
 
-function GreekCard({
-  label, value, description, onLearn
-}: { label: string; value: string; description: string; onLearn: () => void }) {
+function GreekCard({ label, value, description, onLearn }: { label: string; value: string; description: string; onLearn: () => void }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <div
-      onClick={onLearn}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <div onClick={onLearn} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         background: hovered ? "#111e11" : "#111811",
         border: `0.5px solid ${hovered ? "#3a5a3a" : "#2a3a2a"}`,
         borderRadius: 8, padding: "16px", flex: 1, minWidth: 120,
-        cursor: "pointer", transition: "all 0.15s",
-        position: "relative",
-      }}
-    >
+        cursor: "pointer", transition: "all 0.15s", position: "relative",
+      }}>
       <div style={{ color: "#5fc97a", fontSize: 11, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
       <div style={{ color: "#eaf4ea", fontSize: 22, fontWeight: 600, marginBottom: 4 }}>{value}</div>
       <div style={{ color: "#5a7a5a", fontSize: 11 }}>{description}</div>
-      <div style={{
-        position: "absolute", top: 10, right: 12,
-        fontSize: 10, color: "#3a5a3a",
-        opacity: hovered ? 1 : 0, transition: "opacity 0.15s",
-      }}>
-        learn ↗
+      <div style={{ position: "absolute", top: 10, right: 12, fontSize: 10, color: "#3a5a3a", opacity: hovered ? 1 : 0, transition: "opacity 0.15s" }}>learn ↗</div>
+    </div>
+  );
+}
+
+// ── AI Analysis Panel ───────────────────────────────────────────────────────
+
+function parseAnalysis(text: string) {
+  const sections: { title: string; content: string }[] = [];
+  const headers = ["What's Happening", "Strategy Feedback", "How to Improve"];
+  
+  headers.forEach((header, i) => {
+    const start = text.indexOf(`**${header}**`);
+    if (start === -1) return;
+    const contentStart = start + header.length + 4;
+    const nextHeader = headers.slice(i + 1).map(h => text.indexOf(`**${h}**`)).filter(n => n > -1)[0];
+    const content = text.slice(contentStart, nextHeader ?? text.length).trim();
+    sections.push({ title: header, content });
+  });
+
+  // fallback: return raw text if parsing fails
+  if (sections.length === 0) sections.push({ title: "Analysis", content: text });
+  return sections;
+}
+
+function AIPanel({ result }: { result: SimulationResult }) {
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-run analysis when result changes
+  useEffect(() => {
+    setChatMessages([]);
+    setAnalysis(null);
+    runAnalysis();
+  }, [result]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  async function runAnalysis() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          simulationData: result,
+          messages: [{ role: "user", content: "Analyze this options trade simulation and give me your assessment." }],
+        }),
+      });
+      const data = await res.json();
+      setAnalysis(data.analysis);
+      setChatMessages([
+        { role: "user", content: "Analyze this options trade simulation and give me your assessment." },
+        { role: "assistant", content: data.analysis },
+      ]);
+    } catch {
+      setAnalysis("Failed to generate analysis.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function sendChat() {
+    if (!chatInput.trim() || chatLoading) return;
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    const newMessages: ChatMessage[] = [...chatMessages, { role: "user", content: userMsg }];
+    setChatMessages(newMessages);
+    setChatLoading(true);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ simulationData: result, messages: newMessages }),
+      });
+      const data = await res.json();
+      setChatMessages([...newMessages, { role: "assistant", content: data.analysis }]);
+    } catch {
+      setChatMessages([...newMessages, { role: "assistant", content: "Sorry, something went wrong." }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  const sections = analysis ? parseAnalysis(analysis) : [];
+
+  const sectionColors: Record<string, string> = {
+    "What's Happening": "#7a9c7a",
+    "Strategy Feedback": "#f0a050",
+    "How to Improve": "#5fc97a",
+  };
+
+  return (
+    <div style={{ background: "#0d150d", border: "0.5px solid #1e2e1e", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#5fc97a" }} />
+        <div style={{ fontSize: 14, color: "#eaf4ea", fontWeight: 600 }}>AI Analysis</div>
+        <div style={{ fontSize: 11, color: "#3a5a3a", marginLeft: "auto" }}>Powered by Claude</div>
       </div>
+
+      {/* Analysis sections */}
+      {loading && (
+        <div style={{ color: "#3a5a3a", fontSize: 13, padding: "20px 0", textAlign: "center" }}>
+          Analyzing your trade...
+        </div>
+      )}
+
+      {!loading && sections.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+          {sections.map(({ title, content }) => (
+            <div key={title} style={{ background: "#111811", border: "0.5px solid #1e2e1e", borderRadius: 8, padding: "14px 16px" }}>
+              <div style={{ fontSize: 10, color: sectionColors[title] ?? "#7a9c7a", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>
+                {title}
+              </div>
+              <div style={{ fontSize: 13, color: "#b0ccb0", lineHeight: 1.7 }}>{content}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Divider */}
+      {!loading && (
+        <div style={{ borderTop: "0.5px solid #1e2e1e", paddingTop: 16 }}>
+          <div style={{ fontSize: 11, color: "#3a5a3a", marginBottom: 12 }}>Ask a follow-up question</div>
+
+          {/* Chat history (follow-ups only) */}
+          {chatMessages.length > 2 && (
+            <div style={{ maxHeight: 240, overflowY: "auto", marginBottom: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              {chatMessages.slice(2).map((msg, i) => (
+                <div key={i} style={{
+                  alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                  maxWidth: "85%",
+                  background: msg.role === "user" ? "#1a2e1a" : "#111811",
+                  border: "0.5px solid #1e2e1e",
+                  borderRadius: 8, padding: "10px 14px",
+                  fontSize: 13, color: msg.role === "user" ? "#5fc97a" : "#b0ccb0",
+                  lineHeight: 1.6,
+                }}>
+                  {msg.content}
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ alignSelf: "flex-start", fontSize: 13, color: "#3a5a3a", padding: "10px 14px" }}>thinking...</div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          )}
+
+          {/* Input */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && sendChat()}
+              placeholder='e.g. "What if I moved the strike closer to current price?"'
+              style={{
+                flex: 1, background: "#111811", border: "0.5px solid #2a3a2a",
+                borderRadius: 6, padding: "8px 12px", color: "#eaf4ea", fontSize: 13,
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={sendChat}
+              disabled={chatLoading || !chatInput.trim()}
+              style={{
+                background: chatLoading ? "#1a2e1a" : "#5fc97a", color: "#0a0f0a",
+                border: "none", borderRadius: 6, padding: "8px 16px",
+                fontSize: 13, fontWeight: 600, cursor: chatLoading ? "not-allowed" : "pointer",
+                opacity: chatLoading ? 0.6 : 1,
+              }}
+            >
+              Ask
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -319,18 +446,21 @@ export default function SimulatorPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0f0a", color: "#f0f4f0", fontFamily: "sans-serif" }}>
 
-      {/* Education Drawer */}
       <EduDrawer topic={eduTopic} onClose={() => setEduTopic(null)} />
 
       {/* NAV */}
       <nav style={{ borderBottom: "0.5px solid #1e2e1e", padding: "12px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ color: "#5fc97a", fontWeight: 600, fontSize: 16 }}>QuantShield</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <Link href="/" style={{ color: "#7a9c7a", fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+            ← Back
+          </Link>
+          <span style={{ color: "#5fc97a", fontWeight: 600, fontSize: 16 }}>QuantShield</span>
+        </div>
         <span style={{ color: "#7a9c7a", fontSize: 13 }}>Simulator</span>
       </nav>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
 
-        {/* HEADER */}
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 28, fontWeight: 600, color: "#eaf4ea", marginBottom: 8 }}>Options Simulator</h1>
           <p style={{ color: "#7a9c7a", fontSize: 14 }}>Run Monte Carlo simulations on real options. See every possible outcome before you trade.</p>
@@ -390,14 +520,12 @@ export default function SimulatorPage() {
               {loading ? "Running..." : "Run Simulation →"}
             </button>
           </div>
-
           {error && <div style={{ color: "#e05555", fontSize: 13, marginTop: 12 }}>{error}</div>}
         </div>
 
         {/* RESULTS */}
         {result && (
           <>
-            {/* Education hint */}
             <div style={{ fontSize: 11, color: "#3a5a3a", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ color: "#5fc97a" }}>ⓘ</span>
               Click any card to learn what each number means
@@ -463,6 +591,9 @@ export default function SimulatorPage() {
                 <GreekCard label="Vega" value={result.blackScholes.vega.toString()} description="Sensitivity to volatility change" onLearn={() => setEduTopic("Vega")} />
               </div>
             </div>
+
+            {/* AI ANALYSIS */}
+            <AIPanel result={result} />
           </>
         )}
 
