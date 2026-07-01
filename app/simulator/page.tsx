@@ -178,7 +178,7 @@ function GreekCard({ label, value, description, onLearn }: { label: string; valu
 function parseAnalysis(text: string) {
   const sections: { title: string; content: string }[] = [];
   const headers = ["What's Happening", "Strategy Feedback", "How to Improve"];
-  
+
   headers.forEach((header, i) => {
     const start = text.indexOf(`**${header}**`);
     if (start === -1) return;
@@ -571,8 +571,8 @@ export default function SimulatorPage() {
                   <AreaChart data={pnlData}>
                     <XAxis dataKey="price" stroke="#2a3a2a" tick={{ fill: "#5a7a5a", fontSize: 10 }} />
                     <YAxis stroke="#2a3a2a" tick={{ fill: "#5a7a5a", fontSize: 10 }} />
-                    <Tooltip contentStyle={{ background: "#0d150d", border: "0.5px solid #2a3a2a", color: "#eaf4ea", fontSize: 12 }}
-                      formatter={(v: number) => [`$${v.toFixed(2)}`, "P&L"]} />
+                    <Tooltip contentStyle={{ background: "#0d150d", border: "0.5px solid #2a3a2a", color: "#eaf4ea" }}
+                      formatter={(v) => [`$${Number(v).toFixed(2)}`, "P&L"]} />
                     <ReferenceLine y={0} stroke="#2a3a2a" />
                     <ReferenceLine x={breakeven} stroke="#5fc97a" strokeDasharray="4 4" label={{ value: "BE", fill: "#5fc97a", fontSize: 10 }} />
                     <Area dataKey="pnl" stroke="#5fc97a" fill="#5fc97a" fillOpacity={0.1} dot={false} strokeWidth={1.5} />
