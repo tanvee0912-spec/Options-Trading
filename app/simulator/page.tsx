@@ -6,6 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ReferenceLine, ResponsiveContainer, AreaChart, Area
 } from "recharts";
+import { openPosition } from "../lib/portfolio";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -370,6 +371,12 @@ export default function SimulatorPage() {
   const [error, setError] = useState("");
   const [eduTopic, setEduTopic] = useState<string | null>(null);
 
+  // Paper trading state
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [contracts, setContracts] = useState(1);
+  const [tradeError, setTradeError] = useState("");
+  const [tradeSuccess, setTradeSuccess] = useState(false);
+
   async function fetchPrice() {
     if (!ticker) return;
     setFetchingPrice(true);
@@ -416,6 +423,37 @@ export default function SimulatorPage() {
     }
   }
 
+  function handlePaperTrade() {
+    if (!result) return;
+    try {
+      setTradeError("");
+      openPosition({
+        ticker: result.ticker,
+        type: result.optionType as "call" | "put",
+        strike: result.strikePrice,
+        expirationDate: new Date(Date.now() + result.expirationDays * 86400000).toISOString(),
+        contracts,
+        entryPrice: result.blackScholes.price,
+        entryDate: new Date().toISOString(),
+        impliedVolatility: result.impliedVolatility,
+        entryGreeks: {
+          delta: result.blackScholes.delta,
+          gamma: result.blackScholes.gamma,
+          theta: result.blackScholes.theta,
+          vega: result.blackScholes.vega,
+        },
+      });
+      setTradeSuccess(true);
+      setTimeout(() => {
+        setShowTradeModal(false);
+        setTradeSuccess(false);
+        setContracts(1);
+      }, 1200);
+    } catch (err) {
+      setTradeError(err instanceof Error ? err.message : "Trade failed");
+    }
+  }
+
   function preparePathData() {
     if (!result) return [];
     const steps = result.monteCarlo.paths[0].length;
@@ -456,7 +494,12 @@ export default function SimulatorPage() {
           </Link>
           <span style={{ color: "#5fc97a", fontWeight: 600, fontSize: 16 }}>QuantShield</span>
         </div>
-        <span style={{ color: "#7a9c7a", fontSize: 13 }}>Simulator</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <span style={{ color: "#5fc97a", fontSize: 13, fontWeight: 600 }}>Simulator</span>
+          <Link href="/portfolio" style={{ color: "#7a9c7a", fontSize: 13, textDecoration: "none" }}>
+            Portfolio
+          </Link>
+        </div>
       </nav>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
@@ -530,6 +573,14 @@ export default function SimulatorPage() {
               <span style={{ color: "#5fc97a" }}>ⓘ</span>
               Click any card to learn what each number means
             </div>
+
+            {/* PAPER TRADE BUTTON */}
+            <button onClick={() => setShowTradeModal(true)} style={{
+              background: "#f0a050", color: "#0a0f0a", border: "none", borderRadius: 6,
+              padding: "10px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 20,
+            }}>
+              Paper Trade This →
+            </button>
 
             {/* STATS BAR */}
             <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
@@ -606,6 +657,66 @@ export default function SimulatorPage() {
           </div>
         )}
       </div>
+
+      {/* PAPER TRADE MODAL */}
+      {showTradeModal && result && (
+        <div onClick={() => setShowTradeModal(false)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: "#0d150d", border: "0.5px solid #2a3a2a", borderRadius: 12,
+            padding: 28, width: 340,
+          }}>
+            {tradeSuccess ? (
+              <div style={{ textAlign: "center", padding: "20px 0", color: "#5fc97a", fontSize: 15 }}>
+                ✓ Position opened
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#eaf4ea", marginBottom: 4 }}>
+                  Paper Trade: {result.ticker} ${result.strikePrice} {result.optionType.toUpperCase()}
+                </div>
+                <div style={{ fontSize: 12, color: "#5a7a5a", marginBottom: 20 }}>
+                  {result.expirationDays} days to expiration
+                </div>
+                <label style={{ fontSize: 11, color: "#5a7a5a", textTransform: "uppercase", letterSpacing: 1 }}>
+                  Contracts
+                </label>
+                <input
+                  type="number" min={1} value={contracts}
+                  onChange={e => setContracts(Math.max(1, parseInt(e.target.value) || 1))}
+                  style={{
+                    display: "block", width: "100%", marginTop: 6, marginBottom: 16,
+                    background: "#111811", border: "0.5px solid #2a3a2a", borderRadius: 6,
+                    padding: "8px 12px", color: "#eaf4ea", fontSize: 14,
+                  }}
+                />
+                <div style={{ fontSize: 13, color: "#7a9c7a", marginBottom: 20 }}>
+                  Cost: <span style={{ color: "#5fc97a", fontWeight: 600 }}>
+                    ${(result.blackScholes.price * 100 * contracts).toFixed(2)}
+                  </span>
+                </div>
+                {tradeError && <div style={{ color: "#e05555", fontSize: 12, marginBottom: 12 }}>{tradeError}</div>}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={handlePaperTrade} style={{
+                    flex: 1, background: "#5fc97a", color: "#0a0f0a", border: "none",
+                    borderRadius: 6, padding: "10px 0", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  }}>
+                    Confirm
+                  </button>
+                  <button onClick={() => setShowTradeModal(false)} style={{
+                    flex: 1, background: "#111811", color: "#7a9c7a", border: "0.5px solid #2a3a2a",
+                    borderRadius: 6, padding: "10px 0", fontSize: 13, cursor: "pointer",
+                  }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
